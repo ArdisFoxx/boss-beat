@@ -1,0 +1,64 @@
+name: Release Creation
+
+# Fires when a GitHub Release is published (draft/pre-release excluded - "published" only
+# covers real releases, and "latest" URLs like the ones in module.json's manifest/download
+# fields only ever resolve to the most recent *published, non-prerelease* release anyway).
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read module.json version
+        id: module_version
+        run: echo "version=$(jq -r .version module.json)" >> "$GITHUB_OUTPUT"
+
+      # module.json's manifest/download fields point at .../releases/latest/download/... -
+      # that URL only ever serves whatever the most recent release's own module.json says its
+      # version is, so a release tagged out of step with module.json would make Foundry report
+      # the wrong version for what actually got installed. Fail loudly instead of publishing a
+      # mismatched release - fix by bumping module.json (or the tag) to match, then re-run.
+      - name: Verify release tag matches module.json version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          version="${{ steps.module_version.outputs.version }}"
+          if [ "$tag" != "$version" ]; then
+            echo "::error::Release tag '${GITHUB_REF_NAME}' does not match module.json version '${version}' (expected tag 'v${version}' or '${version}')."
+            exit 1
+          fi
+
+      # Everything Foundry actually needs to load and run the module. Excludes .git/.github,
+      # the pipeline's own tools/ (extractors, source PDFs never belong in a player's install),
+      # and anything else not listed in module.json's own file references.
+      - name: Zip module contents
+        run: |
+          zip -r module.zip \
+            module.json \
+            scripts \
+            styles \
+            templates \
+            lang \
+            assets \
+            LICENSE \
+            README.md
+
+      # releases/latest/download/module.json and .../module.zip (the URLs module.json's own
+      # manifest/download fields point at) resolve to whichever published release most recently
+      # uploaded assets with those exact names - so as long as every release uploads both under
+      # these names, no per-release URL templating is needed anywhere in this workflow.
+      - name: Attach module.json and module.zip to the release
+        uses: ncipollo/release-action@v1
+        with:
+          allowUpdates: true
+          artifacts: "module.json,module.zip"
+          artifactErrorsFailBuild: true
+          omitBodyDuringUpdate: true
+          omitNameDuringUpdate: true
