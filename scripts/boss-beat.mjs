@@ -193,7 +193,12 @@ class BossBeatControls {
     });
     stopBtn.addEventListener("click", () => {
       this.#cancelled = true;
+      // sound.stop() only fires the "stop" event (which is what normally tears the panel
+      // down via onStop below) if the sound was actually still playing. If it had already
+      // ended or been paused-then-stopped, that event never fires and the panel would be
+      // stuck on screen - so tear it down directly rather than relying on the event.
       sound.stop();
+      this.stop();
     });
     volumeInput.addEventListener("input", () => {
       sound.volume = Number(volumeInput.value);
