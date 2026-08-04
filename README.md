@@ -1,14 +1,19 @@
 # Boss Beat
 
-Replaces a hand-timed "wait N seconds then reveal the boss" macro with
-something scrubbed to the beat. Pick a boss's song, scrub to the exact
-moment you want the reveal to land, and save it against that boss's token.
+A Foundry module that combines Boss Bar and Boss Splash Screen to help you 
+time your GM narrative for an epic boss reveal *perfectly* to the music,
+making for a truly cinematic boss encounter.
+
+<video src="https://github.com/user-attachments/assets/8b4c3fe3-2682-42fe-9c7a-a937e718e363" width="100%" controls>
+</video>
 
 On Run: the song plays, a countdown to your marked beat shows on screen so
 you can narrate up to the moment, and right on the beat it fires
 [Boss Splash](https://foundryvtt.com/packages/boss-splash), reveals the
 [Boss Bar](https://foundryvtt.com/packages/bossbar), unhides the token, and
-pings the canvas. It also renames the token and actor to whatever you typed
+pans and zooms to the token on the canvas. 
+
+It also renames the token and actor to whatever you typed
 as the reveal message, so the Boss Bar's name matches what the splash just
 announced.
 
