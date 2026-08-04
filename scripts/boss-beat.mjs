@@ -161,10 +161,23 @@ export class BossBeat {
     // Poll actual playback position rather than a blind setTimeout, so pausing the song
     // from the transport controls genuinely holds the countdown - it doesn't just look
     // paused while the splash still fires on the original wall-clock schedule.
-    while (sound.currentTime < config.markerSeconds) {
+    //
+    // Cancelled is checked FIRST, every iteration, deliberately decoupled from the marker
+    // condition - a `while (sound.currentTime < config.markerSeconds) { if (cancelled) return }`
+    // shape (what this used to be) only ever reaches the cancelled check while the loop
+    // condition is still true. Clicking Stop calls sound.stop(), and on a real Sound that can
+    // itself push currentTime up to/past duration - so the very next iteration's *outer* while
+    // condition reads false, the loop exits through its normal "marker reached" path, and the
+    // splash fires anyway despite cancelled being true, without the cancelled check ever having
+    // a chance to run. Confirmed live: Stop clicked well before the marker still fired the
+    // splash and Boss Bar under the old shape. Checking cancelled unconditionally on every pass,
+    // before anything else, closes that regardless of what stop() does to currentTime.
+    while (true) {
       if (BossBeatControls.cancelled) return;
+      if (sound.currentTime >= config.markerSeconds) break;
       await wait(100);
     }
+    if (BossBeatControls.cancelled) return; // belt and suspenders against a last-instant cancel
 
     BossBeatControls.markerReached();
 
