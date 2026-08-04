@@ -1,64 +1,79 @@
-name: Release Creation
+name: Create Module Files For GitHub Release
+#
+# Same pattern as Ardis's other modules (ardisfoxxs-lewd-rpg, ardisfoxxs-lewd-pf2e,
+# ardisfoxxs-drakkenheim) - version and download URL are derived from the release tag at
+# build time via token substitution, so there's nothing in the committed module.json that
+# has to be kept in sync with the tag by hand. The previous version of this workflow instead
+# hard-failed the whole build if the committed module.json version didn't exactly match the
+# tag - which is exactly what happened the first time this ran (module.json said 1.6.6, the
+# tags created were 1.6.4 and 1.6.5), so no assets ever got attached and Foundry's install
+# had nothing to download. This version can't hit that failure mode: the tag IS the version.
 
-# Fires when a GitHub Release is published (draft/pre-release excluded - "published" only
-# covers real releases, and "latest" URLs like the ones in module.json's manifest/download
-# fields only ever resolve to the most recent *published, non-prerelease* release anyway).
+env:
+  # Doesn't change per release - Foundry's "check for updates" always re-fetches this same
+  # URL, which resolves to whichever published (non-prerelease) release most recently
+  # uploaded a module.json here.
+  latest_manifest_url: "https://github.com/${{ github.repository }}/releases/latest/download/module.json"
+
+  # This release's own archive - keyed to the exact tag being published right now.
+  release_module_url: "https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/module.zip"
+
 on:
+  # Only real published releases - not draft saves, not plain tag pushes (tagging alone
+  # doesn't create or publish a release, and this workflow won't fire for it).
   release:
     types: [published]
-
-permissions:
-  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Read module.json version
-        id: module_version
-        run: echo "version=$(jq -r .version module.json)" >> "$GITHUB_OUTPUT"
+      # Accepts either "1.2.3" or "v1.2.3" as the tag - Ardis's tags on this repo so far
+      # have been the bare form ("1.6.4", "1.6.5"), matching his other modules.
+      - name: Extract Version From Tag
+        id: get_version
+        uses: battila7/get-version-action@v2
 
-      # module.json's manifest/download fields point at .../releases/latest/download/... -
-      # that URL only ever serves whatever the most recent release's own module.json says its
-      # version is, so a release tagged out of step with module.json would make Foundry report
-      # the wrong version for what actually got installed. Fail loudly instead of publishing a
-      # mismatched release - fix by bumping module.json (or the tag) to match, then re-run.
-      - name: Verify release tag matches module.json version
-        run: |
-          tag="${GITHUB_REF_NAME#v}"
-          version="${{ steps.module_version.outputs.version }}"
-          if [ "$tag" != "$version" ]; then
-            echo "::error::Release tag '${GITHUB_REF_NAME}' does not match module.json version '${version}' (expected tag 'v${version}' or '${version}')."
-            exit 1
-          fi
+      # Rewrites the #{VERSION}# and #{DOWNLOAD}# placeholders in module.json with this
+      # release's real values. Only touches the action's checked-out copy of the file, not
+      # anything committed to the repo.
+      - name: Modify Module Manifest With Release-Specific Values
+        uses: cschleiden/replace-tokens@v1
+        with:
+          files: "module.json"
+        env:
+          VERSION: ${{ steps.get_version.outputs.version-without-v }}
+          DOWNLOAD: ${{ env.release_module_url }}
 
-      # Everything Foundry actually needs to load and run the module. Excludes .git/.github,
-      # the pipeline's own tools/ (extractors, source PDFs never belong in a player's install),
-      # and anything else not listed in module.json's own file references.
-      - name: Zip module contents
+      # Everything Foundry actually needs to load and run the module. Excludes .git/.github
+      # and any pipeline-only tooling that never belongs in a player's install.
+      - name: Create Module Archive
         run: |
-          zip -r module.zip \
+          zip \
+            --recurse-paths \
+            ./module.zip \
             module.json \
+            README.md \
+            LICENSE \
             scripts \
             styles \
             templates \
             lang \
-            assets \
-            LICENSE \
-            README.md
+            assets
 
-      # releases/latest/download/module.json and .../module.zip (the URLs module.json's own
-      # manifest/download fields point at) resolve to whichever published release most recently
-      # uploaded assets with those exact names - so as long as every release uploads both under
-      # these names, no per-release URL templating is needed anywhere in this workflow.
-      - name: Attach module.json and module.zip to the release
+      - name: Update Release With Files
         uses: ncipollo/release-action@v1
         with:
           allowUpdates: true
-          artifacts: "module.json,module.zip"
-          artifactErrorsFailBuild: true
-          omitBodyDuringUpdate: true
-          omitNameDuringUpdate: true
+          name: ${{ github.event.release.name }}
+          prerelease: ${{ github.event.release.prerelease }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          artifacts: "./module.json, ./module.zip"
+          tag: ${{ github.event.release.tag_name }}
+          body: ${{ github.event.release.body }}
