@@ -243,6 +243,11 @@ class BossBeatControls {
 
     const countdownText = el.querySelector(".boss-beat-countdown-text");
     const toggleBtn = el.querySelector('[data-bb-action="toggle"]');
+    // Same button/label ("Stop") the whole time - but clicking it before the marker does more
+    // than end the track: it sets #cancelled, which the marker-wait loop in run() checks on
+    // every poll and returns out of before ever calling game.bossSplash.splashBoss() or touching
+    // the Boss Bar flag. After the marker, the splash has already gone out, so clicking Stop at
+    // that point is just ending the now-playing battle music - nothing left to cancel.
     const stopBtn = el.querySelector('[data-bb-action="stop"]');
     const volumeInput = el.querySelector('[data-bb-action="volume"]');
 
