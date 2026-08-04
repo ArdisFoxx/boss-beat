@@ -9,6 +9,19 @@ const SPLASH_DISPLAY_MS = 5000;
 Hooks.once("init", () => {
   console.log("Boss Beat | Initializing");
   registerDefaultsSettings();
+  game.settings.register(MODULE_ID, "hideBossBarButton", {
+    name: "BOSSBEAT.Settings.HideBossBarButton.Name",
+    hint: "BOSSBEAT.Settings.HideBossBarButton.Hint",
+    scope: "world",
+    config: true,
+    type: Boolean,
+    default: false,
+    // Force the scene-controls bar to re-render immediately on toggle, rather than leaving
+    // the GM staring at a setting that visibly did nothing until their next reload - see the
+    // renderSceneControls hook below for why a re-render (not the getSceneControlButtons data
+    // hook) is what actually applies this.
+    onChange: () => ui.controls.render(true)
+  });
 });
 
 Hooks.once("ready", async () => {
@@ -29,6 +42,25 @@ Hooks.on("getSceneControlButtons", (controls) => {
   };
 });
 
+// bossbar registers its own toolbar button (tool key "bossBar") for manually assigning
+// actors/styles to the bar - Boss Beat's config form covers that same job per-boss, so once
+// the GM's used to driving it from here, that second button is just clutter.
+//
+// Deliberately NOT done by deleting `controls.tokens.tools.bossBar` inside the
+// getSceneControlButtons hook above: hooks for that event fire in registration order, which
+// turned out to put Boss Beat's listener BEFORE bossbar's (confirmed live by inspecting
+// Hooks.events) despite bossbar being a load-order dependency of Boss Beat - so the delete ran
+// first and bossbar re-added its tool right after. Removing the rendered DOM element instead,
+// via renderSceneControls, sidesteps that ordering entirely - it only runs once all
+// getSceneControlButtons listeners (from every module) have already populated the data being
+// rendered.
+Hooks.on("renderSceneControls", (app, html) => {
+  if (!game.settings.get(MODULE_ID, "hideBossBarButton")) return;
+  const root = html instanceof HTMLElement ? html : html?.[0];
+  const button = (root ?? document).querySelector?.('[data-tool="bossBar"]');
+  button?.remove();
+});
+
 export class BossBeat {
   static getConfig(actor) {
     return actor.getFlag(MODULE_ID, "config") ?? null;
@@ -36,6 +68,27 @@ export class BossBeat {
 
   static async clearConfig(actor) {
     return actor.unsetFlag(MODULE_ID, "config");
+  }
+
+  /**
+   * Macro-friendly entry point: runs a token's already-saved Boss Beat config immediately,
+   * skipping the Run/Edit/Delete/Cancel prompt `launch()` shows. For a hotbar macro tied to
+   * a specific boss rather than "whatever's selected right now" - a GM who's already dialed
+   * in the beat during prep doesn't need to be asked again mid-session.
+   */
+  static async runSaved(token) {
+    if (!game.user.isGM) return;
+    const actor = token?.actor;
+    if (!actor) {
+      ui.notifications.warn(game.i18n.localize("BOSSBEAT.NoActor"));
+      return;
+    }
+    const config = this.getConfig(actor);
+    if (!config) {
+      ui.notifications.warn(game.i18n.format("BOSSBEAT.NoSavedConfig", { name: actor.name }));
+      return;
+    }
+    await this.run(token, actor, config);
   }
 
   /** Entry point wired to the scene-control button. */
@@ -93,7 +146,10 @@ export class BossBeat {
 
     let sound;
     try {
-      sound = await game.audio.play(config.songPath, { volume: 1.0, loop: false, autoplay: true });
+      // Ship at whatever volume the GM left the preview player at when saving - older saved
+      // configs from before this field existed fall back to the same 0.6 default new configs
+      // start at.
+      sound = await game.audio.play(config.songPath, { volume: config.volume ?? 0.6, loop: false, autoplay: true });
     } catch (err) {
       ui.notifications.error(game.i18n.format("BOSSBEAT.PlaybackError", { path: config.songPath }));
       console.error("Boss Beat |", err);

@@ -1,32 +1,33 @@
 import { MODULE_ID } from "./constants.mjs";
 
 /**
- * Two named Boss Bar styles, sharing Ardis's bar artwork (captured live from the dev world on
- * 2026-08-04) but paired with a different font each - "Souls" with the bundled Optimus
- * Princeps (the font Dark Souls' own UI uses), "Diablo" with a font named "Diablo" that this
- * module does NOT bundle (see the font-registration comment below) - it only renders correctly
- * if a "Diablo" font is already registered some other way (by hand, or by another module).
- * Both use `type: 1` (bossbar's `MATCHING_IMAGES` mode, confirmed by reading its source:
+ * Boss Beat's bundled Boss Bar style, sharing Ardis's bar artwork (captured live from the dev
+ * world on 2026-08-04) with the bundled Optimus Princeps font (the font Dark Souls' own UI
+ * uses). Uses `type: 1` (bossbar's `MATCHING_IMAGES` mode, confirmed by reading its source:
  * `Y = {CLASSIC: 0, MATCHING_IMAGES: 1}`) - that mode renders the bar art as actual `<img>`
  * elements sized to the boss-bar window's real width rather than tiling a fixed-height
  * background, so the art scales cleanly to however wide the GM drags the window, no per-style
  * width/height knob needed. `textAlign: "center"` is what puts the boss's name centered over
  * the bar, matching the reference look Ardis asked to match.
+ *
+ * There used to be a second "Boss Beat Diablo" style pairing the same art with a font named
+ * "Diablo" - removed once the Diablo font stopped being bundled (see the font-registration
+ * comment below): with nothing shipping that font anymore, a style built around it wasn't
+ * worth keeping.
  */
-const SHARED_BAR_ART = {
-  background: `modules/${MODULE_ID}/assets/Boss_Bar_Back.png`,
-  bar: `modules/${MODULE_ID}/assets/Boss_Bar.png`,
-  foreground: `modules/${MODULE_ID}/assets/Boss_Bar_Front.png`,
-  tempBarColor: "#7e7e7e",
-  tempBarAlpha: 0.5,
-  textSize: 20,
-  textAlign: "center",
-  type: 1
-};
-
 const DEFAULT_BAR_STYLES = [
-  { name: "Boss Beat Souls", ...SHARED_BAR_ART, font: "Optimus Princeps" },
-  { name: "Boss Beat Diablo", ...SHARED_BAR_ART, font: "Diablo" }
+  {
+    name: "Boss Beat Souls",
+    background: `modules/${MODULE_ID}/assets/Boss_Bar_Back.png`,
+    bar: `modules/${MODULE_ID}/assets/Boss_Bar.png`,
+    foreground: `modules/${MODULE_ID}/assets/Boss_Bar_Front.png`,
+    tempBarColor: "#7e7e7e",
+    tempBarAlpha: 0.5,
+    textSize: 20,
+    textAlign: "center",
+    type: 1,
+    font: "Optimus Princeps"
+  }
 ];
 
 /** Which of DEFAULT_BAR_STYLES.name gets pre-selected in BossBeatConfigApp by default. */
@@ -35,13 +36,9 @@ const DEFAULT_STYLE_NAME = "Boss Beat Souls";
 /**
  * Bundled fonts. Deliberately does NOT include a Diablo font file - the repo is public now,
  * and a font extracted from Blizzard's game isn't something to redistribute without a clearer
- * license than "found it somewhere." The "Boss Beat Diablo" style above still references a
- * font named "Diablo" by name; on Ardis's own world that resolves via the copy already
- * registered by ardisfoxxs-drakkenheim, and elsewhere it degrades to the browser default until
- * someone registers their own "Diablo" font. The zip Ardis supplied for Optimus Princeps
- * contains two separate font families (not weight variants of one family - each file's
- * internal name/style metadata is its own "Regular"), so each is registered under its own
- * family name.
+ * license than "found it somewhere." The zip Ardis supplied for Optimus Princeps contains two
+ * separate font families (not weight variants of one family - each file's internal
+ * name/style metadata is its own "Regular"), so each is registered under its own family name.
  */
 const OPTIMUS_PRINCEPS_FONT_DEFINITION = {
   editor: true,
@@ -95,11 +92,11 @@ export function registerDefaultsSettings() {
 }
 
 /**
- * One-time, idempotent bootstrap: makes sure the "Boss Beat Souls"/"Boss Beat Diablo" Boss Bar
- * styles and the bundled fonts they use exist (adopting an existing hand-made style by name
- * instead of duplicating it, same as before), applies the saved Boss Splash look, and points
- * Boss Beat's own config form at "Boss Beat Souls" as the default. Safe to call on every
- * ready() - does nothing once defaultsApplied is set.
+ * One-time, idempotent bootstrap: makes sure the "Boss Beat Souls" Boss Bar style and the
+ * bundled fonts it uses exist (adopting an existing hand-made style by name instead of
+ * duplicating it, same as before), applies the saved Boss Splash look, and points Boss Beat's
+ * own config form at that style as the default. Safe to call on every ready() - does nothing
+ * once defaultsApplied is set.
  */
 export async function applyDefaultsOnce() {
   if (game.settings.get(MODULE_ID, "defaultsApplied")) return;

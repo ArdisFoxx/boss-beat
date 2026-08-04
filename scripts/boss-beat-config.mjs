@@ -14,7 +14,8 @@ export class BossBeatConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
           markerSeconds: 0,
           message: actor?.name ?? "",
           subText: "",
-          barStyle: game.settings.get(MODULE_ID, "defaultBarStyle") ?? ""
+          barStyle: game.settings.get(MODULE_ID, "defaultBarStyle") ?? "",
+          volume: 0.6
         };
   }
 
@@ -26,7 +27,8 @@ export class BossBeatConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
     form: { handler: BossBeatConfigApp.#onSubmit, submitOnChange: false, closeOnSubmit: true },
     actions: {
       pickSong: BossBeatConfigApp.#onPickSong,
-      setMarker: BossBeatConfigApp.#onSetMarker
+      setMarker: BossBeatConfigApp.#onSetMarker,
+      createMacro: BossBeatConfigApp.#onCreateMacro
     }
   };
 
@@ -61,6 +63,10 @@ export class BossBeatConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
     if (audio && this.data.songPath && audio.src !== this.data.songPath) {
       audio.src = this.data.songPath;
     }
+    // Preview at the saved volume (Edit flow), not the browser's default - so what's already
+    // saved is what the GM sees/hears reflected in the native volume slider, matching what
+    // will actually play live.
+    if (audio) audio.volume = this.data.volume ?? 0.6;
   }
 
   static async #onPickSong(event, target) {
@@ -73,6 +79,11 @@ export class BossBeatConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
     this.data.message = current.message ?? this.data.message;
     this.data.subText = current.subText ?? this.data.subText;
     this.data.barStyle = current.barStyle ?? this.data.barStyle;
+    // Volume isn't a form field (it's the native <audio controls> element's own slider, not
+    // an <input> FormDataExtended sees) - read it straight off the DOM before the re-render
+    // below recreates the audio element and would otherwise reset it back to the default.
+    const currentAudio = this.element.querySelector("audio#boss-beat-audio");
+    if (currentAudio) this.data.volume = currentAudio.volume;
 
     const fp = new foundry.applications.apps.FilePicker.implementation({
       type: "audio",
@@ -100,6 +111,36 @@ export class BossBeatConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
     }
   }
 
+  // Writes a real World Macro (not a bundled .js file the GM has to paste in) that finds this
+  // actor's token on whatever scene is current when the macro is run, and runs its saved Boss
+  // Beat - so the macro stays correct even if the boss's token gets deleted and re-dropped
+  // (new token, same actor), and warns instead of erroring if the boss isn't on the viewed
+  // scene at all.
+  static async #onCreateMacro(event, target) {
+    if (!this.actor) {
+      ui.notifications.warn(game.i18n.localize("BOSSBEAT.NoActor"));
+      return;
+    }
+    const actorId = this.actor.id;
+    const actorName = this.actor.name;
+    const command = [
+      `const actor = game.actors.get("${actorId}");`,
+      `const token = canvas.tokens.placeables.find(t => t.actor?.id === actor?.id);`,
+      `if (!token) {`,
+      `  ui.notifications.warn(\`Boss Beat: ${actorName.replace(/`/g, "\\`")} isn't on the current scene.\`);`,
+      `} else {`,
+      `  await game.bossBeat.runSaved(token);`,
+      `}`
+    ].join("\n");
+    const macro = await Macro.create({
+      name: game.i18n.format("BOSSBEAT.MacroName", { name: actorName }),
+      type: "script",
+      img: this.actor.img || "icons/svg/drum.svg",
+      command
+    });
+    ui.notifications.info(game.i18n.format("BOSSBEAT.MacroCreated", { name: macro.name }));
+  }
+
   static async #onSubmit(event, form, formData) {
     const data = foundry.utils.expandObject(formData.object);
     if (!this.data.songPath) {
@@ -109,6 +150,11 @@ export class BossBeatConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
     this.data.message = data.message ?? this.data.message;
     this.data.subText = data.subText ?? "";
     this.data.barStyle = data.barStyle ?? "";
+    // Same reasoning as #onPickSong - volume lives on the native <audio> element, not a form
+    // field, so it has to be read off the DOM directly rather than out of `data`. Whatever
+    // level the GM left the preview at is what plays live.
+    const audio = this.element.querySelector("audio#boss-beat-audio");
+    if (audio) this.data.volume = audio.volume;
     await this.actor.setFlag(MODULE_ID, "config", this.data);
     ui.notifications.info(game.i18n.format("BOSSBEAT.Saved", { name: this.actor.name }));
   }

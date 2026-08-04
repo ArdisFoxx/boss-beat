@@ -1,69 +1,58 @@
 # Boss Beat
 
-A system-agnostic Foundry VTT module that replaces a hand-timed "wait N
-seconds then reveal the boss" macro with something scrubbed to the beat. It
-only talks to Foundry's core APIs plus Boss Splash and Boss Bar - nothing in
-it depends on any particular game system.
+Replaces a hand-timed "wait N seconds then reveal the boss" macro with
+something scrubbed to the beat. Pick a boss's song, scrub to the exact
+moment you want the reveal to land, and save it against that boss's token.
 
-Pick a boss's song from the file browser, scrub it to the exact moment you
-want the reveal to land, and drop a marker there. Boss Beat saves that
-marker plus a splash message, subtext, and Boss Bar style against the boss's
-token/actor. Next time you trigger it on that token, choose Run, Edit, or
-Delete. On Run, the song plays, a countdown to the marked beat shows on
-screen so you can narrate up to the moment, and right on the beat it fires
+On Run: the song plays, a countdown to your marked beat shows on screen so
+you can narrate up to the moment, and right on the beat it fires
 [Boss Splash](https://foundryvtt.com/packages/boss-splash), reveals the
 [Boss Bar](https://foundryvtt.com/packages/bossbar), unhides the token, and
-pings the canvas.
+pings the canvas. It also renames the token and actor to whatever you typed
+as the reveal message, so the Boss Bar's name matches what the splash just
+announced.
 
-Because the song isn't routed through Foundry's Playlists sidebar (this
-table runs music through Kenku/Discord instead), Boss Beat ships its own
-floating play/pause/stop/volume transport panel for whatever track it's
-previewing or running.
-
-At the moment of reveal, Boss Beat also renames the token *and* its actor to
-whatever you typed into the Message field - Boss Bar actually reads the
-Actor's name, not the token's, so both get updated to keep the bar's label
-matching what the splash just announced instead of whatever the boss was
-called before.
+Since the song isn't routed through Foundry's Playlists sidebar, Boss Beat
+ships its own floating play/pause/stop/volume transport panel for whatever
+track it's previewing or running.
 
 ## Requirements
 
 - Foundry VTT v13+ (developed against 14.365)
 - The [Boss Splash](https://foundryvtt.com/packages/boss-splash) and
   [Boss Bar](https://foundryvtt.com/packages/bossbar) modules, both enabled
-- Any game system - Boss Beat only reads/writes its own module flags and
-  standard token/actor fields, so it isn't tied to Daggerheart or any other
-  system
 
 ## Use
 
 1. Select a boss's token on the canvas.
 2. Click the drum icon in the token scene-controls toolbar.
-3. First time: pick a song, scrub/preview it, hit **Set Marker Here** at the
-   beat you want, fill in the splash message/subtext and a Boss Bar style,
-   then **Save**.
+3. First time: pick a song, scrub/preview it and set the volume with the
+   native player's controls (defaults to 0.6 - whatever you leave it at is
+   what it plays back at live), hit **Set Marker Here** at the beat you
+   want, fill in the splash message/subtext and a Boss Bar style, then
+   **Save**.
 4. Next time you click the button with that token selected: **Run** plays it
    straight through to the reveal, **Edit** reopens the config, **Delete**
    clears the saved setup.
 
-On first install, Boss Beat also registers two bundled Boss Bar styles -
-"Boss Beat Souls" (Optimus Princeps font, bundled in `assets/`) and "Boss
-Beat Diablo" (a font named "Diablo", **not** bundled - see Notes below) -
-sharing the same bar art in `assets/` - and applies a preset Boss Splash
-look, so everything is ready to use out of the box without manual setup.
-"Boss Beat Souls" is the default the config form pre-selects; both are just
-regular Boss Bar styles, so either can be picked per boss. This only happens
-once per world, and it adopts an existing style of the same name instead of
-duplicating it if you've already made one by hand.
+### Skipping the prompt
 
-## Notes
+The config's **Create Macro** button generates a ready-to-use World Macro
+that instantly runs that boss's saved Boss Beat - drag it to your hotbar for
+a one-click "just go" once a beat's already dialed in.
 
-- The "Boss Beat Diablo" style expects a font registered under the exact
-  name "Diablo" to already exist in your world (by hand, or via another
-  module) - this module doesn't bundle or install that font itself.
-  Without one, it just falls back to the browser default font. "Boss Beat
-  Souls" (Optimus Princeps) needs nothing extra and is the default for this
-  reason.
+### Settings
+
+**"Hide Boss Bar's toolbar button"** removes Boss Bar's own scene-control
+button, so you don't get two similar buttons cluttering the Token controls
+group. Applies immediately, no reload needed.
+
+On first install, Boss Beat also registers a bundled Boss Bar style, "Boss
+Beat Souls" (Optimus Princeps font, bar art and font both bundled in
+`assets/`), and applies a preset Boss Splash look, so everything's ready to
+use out of the box. This only happens once per world, and adopts an
+existing style of the same name instead of duplicating it if you've already
+made one by hand.
 
 ## License
 
