@@ -181,7 +181,23 @@ export class BossBeat {
 
     BossBeatControls.markerReached();
 
-    game.bossSplash.splashBoss({ message: config.message, subText: config.subText });
+    // Match the splash's font to whatever Boss Bar style this boss is actually using, rather
+    // than leaving it to boss-splash's own global fontFamily setting - that setting is a single
+    // world-wide default (Boss Beat points it at "Optimus Princeps" on install, see
+    // defaults.mjs), but bar styles carry their own `font` and the GM can pick a different
+    // style per boss. Without this, a boss set to e.g. the "Evil" style (Times New Roman on the
+    // bar) would still splash in whatever the global default happens to be. splashBoss()'s
+    // options.fontFamily overrides the global setting for just this call (confirmed by reading
+    // boss-splash's own source - BossSplashOverlay#getData does
+    // `this.options.fontFamily ?? game.settings.get('boss-splash','fontFamily')`); falls through
+    // to that same global default if the selected style can't be found or has no font of its
+    // own.
+    const barStyle = (game.settings.get("bossbar", "barStyles") ?? []).find(s => s.id === config.barStyle);
+    game.bossSplash.splashBoss({
+      message: config.message,
+      subText: config.subText,
+      fontFamily: barStyle?.font || undefined
+    });
     await wait(SPLASH_DISPLAY_MS);
 
     // Boss Bar's displayed name comes from the Actor document (`this.actor.name`), not the
