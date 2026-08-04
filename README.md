@@ -55,8 +55,3 @@ name instead of duplicating it if you've already made one by hand. All
 three fonts (Optimus Princeps, Optimus Princeps SemiBold, Diablo) are
 registered and available anywhere Foundry lets you pick a font, whether or
 not they end up in one of the two named styles.
-
-## Notes
-
-- Personal-use module built for a specific home game; not published to the
-  Foundry package listing.
