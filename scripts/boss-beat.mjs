@@ -121,7 +121,12 @@ export class BossBeat {
       hideName: false
     })));
 
-    await token.document.update({ hidden: false });
+    // Rename the token to the name typed into Boss Beat's Message field, right at the
+    // reveal - Boss Bar reads the token's name, so without this it'd show whatever the
+    // token was already called instead of the name the splash just announced.
+    const revealUpdate = { hidden: false };
+    if (config.message) revealUpdate.name = config.message;
+    await token.document.update(revealUpdate);
 
     game.canvas.ping(
       { x: token.x, y: token.y },

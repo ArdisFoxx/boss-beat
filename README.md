@@ -1,8 +1,9 @@
 # Boss Beat
 
-A Foundry VTT module for **Foundryborne Daggerheart** (system 2.6.5+) that
-replaces a hand-timed "wait N seconds then reveal the boss" macro with
-something scrubbed to the beat.
+A system-agnostic Foundry VTT module that replaces a hand-timed "wait N
+seconds then reveal the boss" macro with something scrubbed to the beat. It
+only talks to Foundry's core APIs plus Boss Splash and Boss Bar - nothing in
+it depends on any particular game system.
 
 Pick a boss's song from the file browser, scrub it to the exact moment you
 want the reveal to land, and drop a marker there. Boss Beat saves that
@@ -19,12 +20,19 @@ table runs music through Kenku/Discord instead), Boss Beat ships its own
 floating play/pause/stop/volume transport panel for whatever track it's
 previewing or running.
 
+At the moment of reveal, Boss Beat also renames the token to whatever you
+typed into the Message field - since Boss Bar displays the token's name,
+this keeps the bar's label matching what the splash just announced instead
+of whatever the token happened to be called before.
+
 ## Requirements
 
 - Foundry VTT v13+ (developed against 14.365)
-- The `daggerheart` system
 - The [Boss Splash](https://foundryvtt.com/packages/boss-splash) and
   [Boss Bar](https://foundryvtt.com/packages/bossbar) modules, both enabled
+- Any game system - Boss Beat only reads/writes its own module flags and
+  standard token/actor fields, so it isn't tied to Daggerheart or any other
+  system
 
 ## Use
 
