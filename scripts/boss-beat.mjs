@@ -1,0 +1,236 @@
+import { BossBeatConfigApp } from "./boss-beat-config.mjs";
+import { MODULE_ID } from "./constants.mjs";
+import { registerDefaultsSettings, applyDefaultsOnce } from "./defaults.mjs";
+
+/** How long Boss Splash's overlay sits on screen before Boss Beat reveals the bar/token/ping.
+ *  Matches the delay used in the original hand-written macro this module replaces. */
+const SPLASH_DISPLAY_MS = 5000;
+
+Hooks.once("init", () => {
+  console.log("Boss Beat | Initializing");
+  registerDefaultsSettings();
+});
+
+Hooks.once("ready", async () => {
+  game.bossBeat = BossBeat;
+  if (game.user.isGM) await applyDefaultsOnce();
+});
+
+Hooks.on("getSceneControlButtons", (controls) => {
+  const tokenControls = controls.tokens;
+  if (!tokenControls) return;
+  tokenControls.tools.bossBeat = {
+    name: "bossBeat",
+    title: "Boss Beat",
+    icon: "fa-solid fa-drum",
+    button: true,
+    visible: game.user.isGM,
+    onChange: (event, active) => BossBeat.launch()
+  };
+});
+
+export class BossBeat {
+  static getConfig(actor) {
+    return actor.getFlag(MODULE_ID, "config") ?? null;
+  }
+
+  static async clearConfig(actor) {
+    return actor.unsetFlag(MODULE_ID, "config");
+  }
+
+  /** Entry point wired to the scene-control button. */
+  static async launch() {
+    if (!game.user.isGM) return;
+
+    const tokens = canvas.tokens.controlled;
+    if (tokens.length !== 1) {
+      ui.notifications.warn(game.i18n.localize("BOSSBEAT.SelectOneToken"));
+      return;
+    }
+    const token = tokens[0];
+    const actor = token.actor;
+    if (!actor) {
+      ui.notifications.warn(game.i18n.localize("BOSSBEAT.NoActor"));
+      return;
+    }
+
+    const existing = this.getConfig(actor);
+    if (!existing) {
+      new BossBeatConfigApp({ token, actor }).render(true);
+      return;
+    }
+
+    const choice = await foundry.applications.api.DialogV2.wait({
+      window: { title: game.i18n.format("BOSSBEAT.AlreadySavedTitle", { name: actor.name }) },
+      content: `<p>${game.i18n.format("BOSSBEAT.AlreadySaved", { name: actor.name })}</p>`,
+      buttons: [
+        { action: "run", label: game.i18n.localize("BOSSBEAT.Run"), icon: "fa-solid fa-play", default: true },
+        { action: "edit", label: game.i18n.localize("BOSSBEAT.Edit"), icon: "fa-solid fa-pen" },
+        { action: "delete", label: game.i18n.localize("BOSSBEAT.Delete"), icon: "fa-solid fa-trash" },
+        { action: "cancel", label: game.i18n.localize("BOSSBEAT.Cancel"), icon: "fa-solid fa-xmark" }
+      ],
+      rejectClose: false
+    });
+
+    if (choice === "edit") {
+      new BossBeatConfigApp({ token, actor, existing }).render(true);
+    } else if (choice === "delete") {
+      const confirmed = await foundry.applications.api.DialogV2.confirm({
+        window: { title: game.i18n.localize("BOSSBEAT.ConfirmDeleteTitle") },
+        content: `<p>${game.i18n.format("BOSSBEAT.ConfirmDelete", { name: actor.name })}</p>`
+      });
+      if (confirmed) {
+        await this.clearConfig(actor);
+        ui.notifications.info(game.i18n.format("BOSSBEAT.Deleted", { name: actor.name }));
+      }
+    } else if (choice === "run") {
+      await this.run(token, actor, existing);
+    }
+  }
+
+  static async run(token, actor, config) {
+    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    let sound;
+    try {
+      sound = await game.audio.play(config.songPath, { volume: 1.0, loop: false, autoplay: true });
+    } catch (err) {
+      ui.notifications.error(game.i18n.format("BOSSBEAT.PlaybackError", { path: config.songPath }));
+      console.error("Boss Beat |", err);
+      return;
+    }
+
+    BossBeatControls.start(config.markerSeconds, sound);
+
+    // Poll actual playback position rather than a blind setTimeout, so pausing the song
+    // from the transport controls genuinely holds the countdown - it doesn't just look
+    // paused while the splash still fires on the original wall-clock schedule.
+    while (sound.currentTime < config.markerSeconds) {
+      if (BossBeatControls.cancelled) return;
+      await wait(100);
+    }
+
+    BossBeatControls.markerReached();
+
+    game.bossSplash.splashBoss({ message: config.message, subText: config.subText });
+    await wait(SPLASH_DISPLAY_MS);
+
+    await canvas.scene.setFlag("bossbar", "actors", canvas.tokens.controlled.map(t => ({
+      uuid: t.actor.uuid,
+      style: config.barStyle,
+      hideName: false
+    })));
+
+    await token.document.update({ hidden: false });
+
+    game.canvas.ping(
+      { x: token.x, y: token.y },
+      { size: 0, pull: true, zoom: 2 }
+    );
+
+    // Leave the transport panel up - the song keeps going as battle music, and it'll
+    // tear itself down once the track ends or the GM clicks Stop.
+  }
+}
+
+/**
+ * Floating on-screen panel (GM-only) shown while a Boss Beat track plays. Doubles as a
+ * countdown to the marked beat before it hits, and as play/pause/stop/volume transport for
+ * a track that (deliberately) isn't running through the Playlists sidebar.
+ */
+class BossBeatControls {
+  static #el = null;
+  static #interval = null;
+  static #sound = null;
+  static #listeners = null;
+  static #cancelled = false;
+
+  static get cancelled() {
+    return this.#cancelled;
+  }
+
+  static start(markerSeconds, sound) {
+    // Starting a new Boss Beat while a previous one is still playing (e.g. the GM ran it
+    // for one boss and then another) - cut the old track rather than leaving two songs
+    // running with only the new one controllable.
+    if (this.#sound && this.#sound !== sound && this.#sound.playing) {
+      this.#sound.stop();
+    }
+    this.stop();
+    this.#sound = sound;
+    this.#cancelled = false;
+
+    const el = document.createElement("div");
+    el.id = "boss-beat-controls";
+    el.innerHTML = `
+      <div class="boss-beat-countdown-text"></div>
+      <div class="boss-beat-transport">
+        <button type="button" data-bb-action="toggle" data-tooltip="Pause/Resume"><i class="fa-solid fa-pause"></i></button>
+        <button type="button" data-bb-action="stop" data-tooltip="Stop"><i class="fa-solid fa-stop"></i></button>
+        <i class="fa-solid fa-volume-high boss-beat-volume-icon"></i>
+        <input type="range" data-bb-action="volume" min="0" max="1" step="0.05">
+      </div>
+    `;
+    document.body.appendChild(el);
+    this.#el = el;
+
+    const countdownText = el.querySelector(".boss-beat-countdown-text");
+    const toggleBtn = el.querySelector('[data-bb-action="toggle"]');
+    const stopBtn = el.querySelector('[data-bb-action="stop"]');
+    const volumeInput = el.querySelector('[data-bb-action="volume"]');
+
+    volumeInput.value = sound.volume ?? 1;
+    toggleBtn.innerHTML = sound.playing ? '<i class="fa-solid fa-pause"></i>' : '<i class="fa-solid fa-play"></i>';
+
+    toggleBtn.addEventListener("click", () => {
+      if (sound.playing) sound.pause();
+      else sound.play();
+    });
+    stopBtn.addEventListener("click", () => {
+      this.#cancelled = true;
+      sound.stop();
+    });
+    volumeInput.addEventListener("input", () => {
+      sound.volume = Number(volumeInput.value);
+    });
+
+    const onPlay = () => { toggleBtn.innerHTML = '<i class="fa-solid fa-pause"></i>'; };
+    const onPause = () => { toggleBtn.innerHTML = '<i class="fa-solid fa-play"></i>'; };
+    const onEnd = () => { this.#cancelled = true; this.stop(); };
+    const onStop = () => { this.#cancelled = true; this.stop(); };
+    sound.addEventListener("play", onPlay);
+    sound.addEventListener("pause", onPause);
+    sound.addEventListener("end", onEnd);
+    sound.addEventListener("stop", onStop);
+    this.#listeners = { onPlay, onPause, onEnd, onStop };
+
+    this.#interval = setInterval(() => {
+      const remaining = Math.max(0, markerSeconds - sound.currentTime);
+      countdownText.textContent = remaining > 0 ? remaining.toFixed(1) : "";
+    }, 100);
+  }
+
+  /** Marker was reached - drop the countdown number, keep play/pause/stop/volume up. */
+  static markerReached() {
+    if (this.#interval) clearInterval(this.#interval);
+    this.#interval = null;
+    this.#el?.querySelector(".boss-beat-countdown-text")?.remove();
+  }
+
+  static stop() {
+    if (this.#interval) clearInterval(this.#interval);
+    this.#interval = null;
+    if (this.#sound && this.#listeners) {
+      this.#sound.removeEventListener("play", this.#listeners.onPlay);
+      this.#sound.removeEventListener("pause", this.#listeners.onPause);
+      this.#sound.removeEventListener("end", this.#listeners.onEnd);
+      this.#sound.removeEventListener("stop", this.#listeners.onStop);
+    }
+    this.#sound = null;
+    this.#listeners = null;
+    if (this.#el) {
+      this.#el.remove();
+      this.#el = null;
+    }
+  }
+}

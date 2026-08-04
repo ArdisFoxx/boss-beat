@@ -1,0 +1,25 @@
+{
+  "id": "boss-beat",
+  "title": "Boss Beat",
+  "description": "Pick a boss's song, scrub to the exact beat you want the splash to land on, and save it. Next time, Boss Beat plays the song, counts down to that beat for you, then fires Boss Splash and reveals the Boss Bar right on cue.",
+  "version": "1.0.0",
+  "compatibility": {
+    "minimum": "13",
+    "verified": "14"
+  },
+  "relationships": {
+    "requires": [
+      { "id": "boss-splash", "type": "module", "compatibility": {} },
+      { "id": "bossbar", "type": "module", "compatibility": {} }
+    ]
+  },
+  "esmodules": ["scripts/boss-beat.mjs"],
+  "styles": ["styles/boss-beat.css"],
+  "languages": [
+    { "lang": "en", "name": "English", "path": "lang/en.json" }
+  ],
+  "authors": [{ "name": "Ardis" }],
+  "url": "",
+  "manifest": "",
+  "download": ""
+}

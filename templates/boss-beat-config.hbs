@@ -1,0 +1,41 @@
+<div class="boss-beat-config">
+  <div class="form-group">
+    <label>{{localize "BOSSBEAT.Song"}}</label>
+    <div class="boss-beat-song-row">
+      <span class="boss-beat-song-path">{{#if songPath}}{{songPath}}{{else}}{{localize "BOSSBEAT.NoSong"}}{{/if}}</span>
+      <button type="button" data-action="pickSong"><i class="fa-solid fa-folder-open"></i> {{localize "BOSSBEAT.ChooseFile"}}</button>
+    </div>
+  </div>
+
+  {{#if songPath}}
+  <div class="form-group">
+    <audio id="boss-beat-audio" controls style="width: 100%;"></audio>
+  </div>
+  <div class="form-group boss-beat-marker-row">
+    <button type="button" data-action="setMarker"><i class="fa-solid fa-map-pin"></i> {{localize "BOSSBEAT.SetMarker"}}</button>
+    <span class="boss-beat-marker-label">{{localize "BOSSBEAT.Marker" time=markerLabel}}</span>
+  </div>
+  {{/if}}
+
+  <hr>
+
+  <div class="form-group">
+    <label>{{localize "BOSSBEAT.Message"}}</label>
+    <input type="text" name="message" value="{{message}}" placeholder="Boss name">
+  </div>
+  <div class="form-group">
+    <label>{{localize "BOSSBEAT.SubText"}}</label>
+    <input type="text" name="subText" value="{{subText}}" placeholder="Subtitle">
+  </div>
+  <div class="form-group">
+    <label>{{localize "BOSSBEAT.BarStyle"}}</label>
+    <select name="barStyle">
+      <option value="">{{localize "BOSSBEAT.NoStyle"}}</option>
+      {{selectOptions barStyleChoices selected=barStyle}}
+    </select>
+  </div>
+
+  <footer class="form-footer">
+    <button type="submit"><i class="fa-solid fa-save"></i> {{localize "BOSSBEAT.Save"}}</button>
+  </footer>
+</div>

@@ -1,0 +1,91 @@
+#boss-beat-controls {
+  position: fixed;
+  top: 12vh;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+#boss-beat-controls .boss-beat-countdown-text {
+  pointer-events: none;
+  font-family: "Times New Roman", serif;
+  font-size: 4.5rem;
+  font-weight: bold;
+  color: #ffffff;
+  text-shadow:
+    0 0 12px #000,
+    0 0 24px #900,
+    2px 2px 4px #000;
+  letter-spacing: 2px;
+  min-height: 1em;
+}
+
+#boss-beat-controls .boss-beat-transport {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  pointer-events: auto;
+}
+
+#boss-beat-controls .boss-beat-transport button {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#boss-beat-controls .boss-beat-transport button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+#boss-beat-controls .boss-beat-volume-icon {
+  color: #fff;
+  opacity: 0.8;
+  margin-left: 0.25rem;
+}
+
+#boss-beat-controls .boss-beat-transport input[type="range"] {
+  width: 90px;
+}
+
+.boss-beat-config .form-group {
+  margin-bottom: 0.75rem;
+}
+
+.boss-beat-config .boss-beat-song-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.boss-beat-config .boss-beat-song-path {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.boss-beat-config .boss-beat-marker-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.boss-beat-config .boss-beat-marker-label {
+  font-weight: bold;
+}

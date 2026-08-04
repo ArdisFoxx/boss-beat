@@ -1,0 +1,29 @@
+{
+  "BOSSBEAT": {
+    "WindowTitle": "Boss Beat: {name}",
+    "Message": "Message",
+    "SubText": "Subtext",
+    "BarStyle": "Boss Bar Style",
+    "NoStyle": "— none —",
+    "Song": "Song",
+    "NoSong": "No song selected",
+    "ChooseFile": "Choose File",
+    "SetMarker": "Set Marker Here",
+    "Marker": "Marker: {time}",
+    "Save": "Save Boss Beat",
+    "SelectOneToken": "Boss Beat: select exactly one boss token first.",
+    "NoActor": "Boss Beat: selected token has no actor.",
+    "AlreadySaved": "A Boss Beat is already saved for {name}. What would you like to do?",
+    "AlreadySavedTitle": "Boss Beat: {name}",
+    "Run": "Run",
+    "Edit": "Edit",
+    "Delete": "Delete",
+    "Cancel": "Cancel",
+    "ConfirmDeleteTitle": "Delete Boss Beat",
+    "ConfirmDelete": "Delete the saved Boss Beat for {name}? This can't be undone.",
+    "Deleted": "Boss Beat: deleted saved beat for {name}.",
+    "Saved": "Boss Beat saved for {name}.",
+    "PickSongFirst": "Boss Beat: pick a song before saving.",
+    "PlaybackError": "Boss Beat: couldn't play \"{path}\". Check the file still exists."
+  }
+}
