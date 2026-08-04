@@ -115,17 +115,23 @@ export class BossBeat {
     game.bossSplash.splashBoss({ message: config.message, subText: config.subText });
     await wait(SPLASH_DISPLAY_MS);
 
+    // Boss Bar's displayed name comes from the Actor document (`this.actor.name`), not the
+    // token - confirmed by reading bossbar's own source (its "name" getter reads
+    // `this.actor.name` directly). Renaming only the token, as a first pass here did, left
+    // the bar showing the actor's old name. Rename the actor to match Boss Beat's Message
+    // field at the reveal, same moment the token itself gets renamed and unhidden.
+    if (config.message && actor.name !== config.message) {
+      await actor.update({ name: config.message });
+    }
+
     await canvas.scene.setFlag("bossbar", "actors", canvas.tokens.controlled.map(t => ({
       uuid: t.actor.uuid,
       style: config.barStyle,
       hideName: false
     })));
 
-    // Rename the token to the name typed into Boss Beat's Message field, right at the
-    // reveal - Boss Bar reads the token's name, so without this it'd show whatever the
-    // token was already called instead of the name the splash just announced.
     const revealUpdate = { hidden: false };
-    if (config.message) revealUpdate.name = config.message;
+    if (config.message && token.document.name !== config.message) revealUpdate.name = config.message;
     await token.document.update(revealUpdate);
 
     game.canvas.ping(
