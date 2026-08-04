@@ -2,14 +2,16 @@ import { MODULE_ID } from "./constants.mjs";
 
 /**
  * Two named Boss Bar styles, sharing Ardis's bar artwork (captured live from the dev world on
- * 2026-08-04) but paired with a different bundled font each - "Souls" with Optimus Princeps
- * (the font Dark Souls' own UI uses), "Diablo" with the Diablo font. Both use `type: 1`
- * (bossbar's `MATCHING_IMAGES` mode, confirmed by reading its source: `Y = {CLASSIC: 0,
- * MATCHING_IMAGES: 1}`) - that mode renders the bar art as actual `<img>` elements sized to
- * the boss-bar window's real width rather than tiling a fixed-height background, so the art
- * scales cleanly to however wide the GM drags the window, no per-style width/height knob
- * needed. `textAlign: "center"` is what puts the boss's name centered over the bar, matching
- * the reference look Ardis asked to match.
+ * 2026-08-04) but paired with a different font each - "Souls" with the bundled Optimus
+ * Princeps (the font Dark Souls' own UI uses), "Diablo" with a font named "Diablo" that this
+ * module does NOT bundle (see the font-registration comment below) - it only renders correctly
+ * if a "Diablo" font is already registered some other way (by hand, or by another module).
+ * Both use `type: 1` (bossbar's `MATCHING_IMAGES` mode, confirmed by reading its source:
+ * `Y = {CLASSIC: 0, MATCHING_IMAGES: 1}`) - that mode renders the bar art as actual `<img>`
+ * elements sized to the boss-bar window's real width rather than tiling a fixed-height
+ * background, so the art scales cleanly to however wide the GM drags the window, no per-style
+ * width/height knob needed. `textAlign: "center"` is what puts the boss's name centered over
+ * the bar, matching the reference look Ardis asked to match.
  */
 const SHARED_BAR_ART = {
   background: `modules/${MODULE_ID}/assets/Boss_Bar_Back.png`,
@@ -31,17 +33,16 @@ const DEFAULT_BAR_STYLES = [
 const DEFAULT_STYLE_NAME = "Boss Beat Souls";
 
 /**
- * Both bundled fonts. Diablo stays available (Ardis's original look, still selectable in the
- * bar-style/Boss Splash font pickers) - Optimus Princeps is the new default. The zip Ardis
- * supplied contains two separate font families (not weight variants of one family - each
- * file's internal name/style metadata is its own "Regular"), so each is registered under its
- * own family name.
+ * Bundled fonts. Deliberately does NOT include a Diablo font file - the repo is public now,
+ * and a font extracted from Blizzard's game isn't something to redistribute without a clearer
+ * license than "found it somewhere." The "Boss Beat Diablo" style above still references a
+ * font named "Diablo" by name; on Ardis's own world that resolves via the copy already
+ * registered by ardisfoxxs-drakkenheim, and elsewhere it degrades to the browser default until
+ * someone registers their own "Diablo" font. The zip Ardis supplied for Optimus Princeps
+ * contains two separate font families (not weight variants of one family - each file's
+ * internal name/style metadata is its own "Regular"), so each is registered under its own
+ * family name.
  */
-const DIABLO_FONT_DEFINITION = {
-  editor: true,
-  fonts: [{ urls: [`modules/${MODULE_ID}/assets/DIABLO.ttf`], weight: 100, style: "normal" }]
-};
-
 const OPTIMUS_PRINCEPS_FONT_DEFINITION = {
   editor: true,
   fonts: [{ urls: [`modules/${MODULE_ID}/assets/OptimusPrinceps.ttf`], weight: 400, style: "normal" }]
@@ -122,7 +123,6 @@ export async function applyDefaultsOnce() {
   }
 
   const bundledFonts = {
-    "Diablo": DIABLO_FONT_DEFINITION,
     "Optimus Princeps": OPTIMUS_PRINCEPS_FONT_DEFINITION,
     "Optimus Princeps SemiBold": OPTIMUS_PRINCEPS_SEMIBOLD_FONT_DEFINITION
   };

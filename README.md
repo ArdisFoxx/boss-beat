@@ -1,7 +1,9 @@
 # Boss Beat
 
 A system-agnostic Foundry VTT module that replaces a hand-timed "wait N
-seconds then reveal the boss" with something perfectly timed to the music.
+seconds then reveal the boss" macro with something scrubbed to the beat. It
+only talks to Foundry's core APIs plus Boss Splash and Boss Bar - nothing in
+it depends on any particular game system.
 
 Pick a boss's song from the file browser, scrub it to the exact moment you
 want the reveal to land, and drop a marker there. Boss Beat saves that
@@ -45,13 +47,27 @@ called before.
    clears the saved setup.
 
 On first install, Boss Beat also registers two bundled Boss Bar styles -
-"Boss Beat Souls" (Optimus Princeps font) and "Boss Beat Diablo" (Diablo
-font), sharing the same bar art in `assets/` - and applies a preset Boss
-Splash look, so everything is ready to use out of the box without manual
-setup. "Boss Beat Souls" is the default the config form pre-selects; both
-are just regular Boss Bar styles, so either can be picked per boss. This
-only happens once per world, and it adopts an existing style of the same
-name instead of duplicating it if you've already made one by hand. All
-three fonts (Optimus Princeps, Optimus Princeps SemiBold, Diablo) are
-registered and available anywhere Foundry lets you pick a font, whether or
-not they end up in one of the two named styles.
+"Boss Beat Souls" (Optimus Princeps font, bundled in `assets/`) and "Boss
+Beat Diablo" (a font named "Diablo", **not** bundled - see Notes below) -
+sharing the same bar art in `assets/` - and applies a preset Boss Splash
+look, so everything is ready to use out of the box without manual setup.
+"Boss Beat Souls" is the default the config form pre-selects; both are just
+regular Boss Bar styles, so either can be picked per boss. This only happens
+once per world, and it adopts an existing style of the same name instead of
+duplicating it if you've already made one by hand.
+
+## Notes
+
+- The "Boss Beat Diablo" style expects a font registered under the exact
+  name "Diablo" to already exist in your world (by hand, or via another
+  module) - this module doesn't bundle or install that font itself.
+  Without one, it just falls back to the browser default font. "Boss Beat
+  Souls" (Optimus Princeps) needs nothing extra and is the default for this
+  reason.
+
+## License
+
+The code in this repository is MIT-licensed (see `LICENSE`). The bar
+artwork in `assets/` is original work. The bundled Optimus Princeps fonts
+carry their own font license, separate from this repo's code license -
+check the font's own terms before reusing it outside this module.
