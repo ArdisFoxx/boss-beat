@@ -1,9 +1,7 @@
 # Boss Beat
 
 A system-agnostic Foundry VTT module that replaces a hand-timed "wait N
-seconds then reveal the boss" macro with something scrubbed to the beat. It
-only talks to Foundry's core APIs plus Boss Splash and Boss Bar - nothing in
-it depends on any particular game system.
+seconds then reveal the boss" with something perfectly timed to the music.
 
 Pick a boss's song from the file browser, scrub it to the exact moment you
 want the reveal to land, and drop a marker there. Boss Beat saves that
