@@ -16,6 +16,14 @@ Since the song isn't routed through Foundry's Playlists sidebar, Boss Beat
 ships its own floating play/pause/stop/volume transport panel for whatever
 track it's previewing or running.
 
+## Install
+
+In Foundry: **Add-on Modules -> Install Module**, paste this manifest URL, and click Install:
+
+```
+https://github.com/ArdisFoxx/boss-beat/releases/latest/download/module.json
+```
+
 ## Requirements
 
 - Foundry VTT v13+ (developed against 14.365)
