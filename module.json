@@ -2,7 +2,7 @@
   "id": "boss-beat",
   "title": "Boss Beat",
   "description": "Pick a boss's song, scrub to the exact beat you want the splash to land on, and save it. Next time, Boss Beat plays the song, counts down to that beat for you, then fires Boss Splash and reveals the Boss Bar right on cue.",
-  "version": "1.6.4",
+  "version": "1.6.5",
   "compatibility": {
     "minimum": "13",
     "verified": "14"
