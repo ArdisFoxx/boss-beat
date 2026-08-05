@@ -4,7 +4,7 @@ A Foundry module that combines Boss Bar and Boss Splash Screen to help you
 time your GM narrative for an epic boss reveal *perfectly* to the music,
 making for a truly cinematic boss encounter.
 
-<video src="https://github.com/user-attachments/assets/8b4c3fe3-2682-42fe-9c7a-a937e718e363" width="100%" controls>
+<video src="https://github.com/user-attachments/assets/1a289e5a-b064-448a-9e29-540fca03041a" width="100%" controls>
 </video>
 
 On Run: the song plays, a countdown to your marked beat shows on screen so
