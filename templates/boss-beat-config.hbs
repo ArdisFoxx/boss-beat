@@ -34,6 +34,14 @@
       {{selectOptions barStyleChoices selected=barStyle}}
     </select>
   </div>
+  <div class="form-group">
+    <label>{{localize "BOSSBEAT.OutroPlaylist"}}</label>
+    <select name="outroPlaylist">
+      <option value="">{{localize "BOSSBEAT.NoOutroPlaylist"}}</option>
+      {{selectOptions playlistChoices selected=outroPlaylist}}
+    </select>
+    <p class="hint">{{localize "BOSSBEAT.OutroPlaylistHint"}}</p>
+  </div>
 
   <footer class="form-footer">
     <button type="submit"><i class="fa-solid fa-save"></i> {{localize "BOSSBEAT.Save"}}</button>

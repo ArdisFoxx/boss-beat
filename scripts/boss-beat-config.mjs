@@ -15,7 +15,8 @@ export class BossBeatConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
           message: actor?.name ?? "",
           subText: "",
           barStyle: game.settings.get(MODULE_ID, "defaultBarStyle") ?? "",
-          volume: 0.6
+          volume: 0.6,
+          outroPlaylist: ""
         };
   }
 
@@ -43,9 +44,19 @@ export class BossBeatConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
   async _prepareContext() {
     const barStyles = game.settings.get("bossbar", "barStyles") ?? [];
     const barStyleChoices = Object.fromEntries(barStyles.map(s => [s.id, s.name]));
+    // Soundboard-only playlists (CONST.PLAYLIST_MODES.DISABLED) are excluded - Playlist#playAll()
+    // (what the outro hand-off calls, see boss-beat.mjs) explicitly no-ops for that mode rather
+    // than starting anything, since soundboard sounds are meant to be triggered individually.
+    // Offering one here would look like a valid choice that silently does nothing.
+    const playlistChoices = Object.fromEntries(
+      game.playlists.contents
+        .filter(p => p.mode !== CONST.PLAYLIST_MODES.DISABLED)
+        .map(p => [p.id, p.name])
+    );
     return {
       ...this.data,
       barStyleChoices,
+      playlistChoices,
       markerLabel: BossBeatConfigApp.formatTime(this.data.markerSeconds)
     };
   }
@@ -79,6 +90,7 @@ export class BossBeatConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
     this.data.message = current.message ?? this.data.message;
     this.data.subText = current.subText ?? this.data.subText;
     this.data.barStyle = current.barStyle ?? this.data.barStyle;
+    this.data.outroPlaylist = current.outroPlaylist ?? this.data.outroPlaylist;
     // Volume isn't a form field (it's the native <audio controls> element's own slider, not
     // an <input> FormDataExtended sees) - read it straight off the DOM before the re-render
     // below recreates the audio element and would otherwise reset it back to the default.
@@ -150,6 +162,7 @@ export class BossBeatConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
     this.data.message = data.message ?? this.data.message;
     this.data.subText = data.subText ?? "";
     this.data.barStyle = data.barStyle ?? "";
+    this.data.outroPlaylist = data.outroPlaylist ?? "";
     // Same reasoning as #onPickSong - volume lives on the native <audio> element, not a form
     // field, so it has to be read off the DOM directly rather than out of `data`. Whatever
     // level the GM left the preview at is what plays live.

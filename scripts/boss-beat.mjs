@@ -6,6 +6,53 @@ import { registerDefaultsSettings, applyDefaultsOnce } from "./defaults.mjs";
  *  Matches the delay used in the original hand-written macro this module replaces. */
 const SPLASH_DISPLAY_MS = 5000;
 
+/**
+ * Sounds that were stopped only because a NEWER Boss Beat run superseded them (see
+ * BossBeatControls.start()'s "cut the old track" branch) - as opposed to genuinely finishing
+ * or being stopped by the GM's own Stop button. run()'s own end/stop listener checks this
+ * before switching to that run's outro playlist, so an interrupted run doesn't hand control of
+ * the music back to whatever IT was configured with after a newer boss has already taken over
+ * the scene. A WeakSet needs no cleanup - entries fall out on their own once the Sound itself
+ * is garbage collected.
+ */
+const supersededSounds = new WeakSet();
+
+/**
+ * Pauses every currently-playing PlaylistSound across every currently-playing Playlist, the
+ * same way Foundry's own sidebar Pause button does - a document update capturing the real
+ * `sound.currentTime` into `pausedTime` (confirmed by reading the sidebar's own
+ * `soundPause` action handler), not just muting the underlying Sound object. That means a GM
+ * who wants their ambient track back later can hit Play on it by hand and pick up right where
+ * the boss interrupted it, same as manually pausing anything else in the Playlists sidebar.
+ * Never touches a playlist that wasn't already playing - triggering a boss over silence leaves
+ * it silent going in, same as always.
+ */
+async function pauseActivePlaylistTracks() {
+  for (const playlist of game.playlists.playing) {
+    const playingSounds = playlist.sounds.filter((s) => s.playing);
+    for (const playlistSound of playingSounds) {
+      await playlistSound.update({
+        playing: false,
+        pausedTime: playlistSound.sound?.currentTime ?? playlistSound.pausedTime ?? 0
+      });
+    }
+  }
+}
+
+/**
+ * Starts the boss's configured outro playlist via playAll() - the exact same entry point
+ * Foundry's own sidebar play button uses, so it honors whatever playback mode
+ * (sequential/shuffle/simultaneous) the GM already has that playlist set to. Quietly does
+ * nothing if the boss has no outro playlist configured, or if the configured playlist was
+ * deleted since - a missing playlist shouldn't throw and interrupt the rest of the reveal.
+ */
+async function switchToOutroPlaylist(config) {
+  if (!config.outroPlaylist) return;
+  const playlist = game.playlists.get(config.outroPlaylist);
+  if (!playlist) return;
+  await playlist.playAll();
+}
+
 Hooks.once("init", () => {
   console.log("Boss Beat | Initializing");
   registerDefaultsSettings();
@@ -144,6 +191,12 @@ export class BossBeat {
   static async run(token, actor, config) {
     const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+    // Cut away from whatever the GM's playlists are doing the instant the boss song starts -
+    // "if playing," so a boss triggered over silence is left exactly that way. Always runs,
+    // independent of whether this boss has an outro playlist configured below - playing the
+    // boss track over ambient music is wrong either way.
+    await pauseActivePlaylistTracks();
+
     let sound;
     try {
       // Ship at whatever volume the GM left the preview player at when saving - older saved
@@ -155,6 +208,27 @@ export class BossBeat {
       console.error("Boss Beat |", err);
       return;
     }
+
+    // Resolves once THIS run's own sound genuinely finishes - either it plays out to the end,
+    // or the GM hits Stop (before or after the marker - either way there's nothing more this
+    // song is going to do). Listened for directly on `sound` itself, independent of
+    // BossBeatControls's own bookkeeping, so a second/newer Boss Beat run gets its own promise
+    // tied to its own distinct Sound object - no cross-run interference possible. Registered
+    // now, before the marker-wait loop below, so it's in place on every path out of this
+    // function (marker reached, cancelled before the marker, cancelled right at the marker) -
+    // not just the ones that reach the end of run().
+    let resolveFinished;
+    const trackFinished = new Promise((resolve) => { resolveFinished = resolve; });
+    const onTrackFinished = () => resolveFinished();
+    sound.addEventListener("end", onTrackFinished, { once: true });
+    sound.addEventListener("stop", onTrackFinished, { once: true });
+    trackFinished.then(async () => {
+      // A newer Boss Beat run stopped this sound out from under it (see BossBeatControls.start())
+      // - that run owns the music now, so this one steps aside rather than switching to its own
+      // (possibly different) outro playlist over the top of whatever the new run is doing.
+      if (supersededSounds.has(sound)) return;
+      await switchToOutroPlaylist(config);
+    });
 
     BossBeatControls.start(config.markerSeconds, sound);
 
@@ -248,8 +322,11 @@ class BossBeatControls {
   static start(markerSeconds, sound) {
     // Starting a new Boss Beat while a previous one is still playing (e.g. the GM ran it
     // for one boss and then another) - cut the old track rather than leaving two songs
-    // running with only the new one controllable.
+    // running with only the new one controllable. Tagging it first lets that old run's own
+    // end/stop listener (see run()) tell the difference between "genuinely finished" and
+    // "got cut off by something newer" - only the former should hand off to an outro playlist.
     if (this.#sound && this.#sound !== sound && this.#sound.playing) {
+      supersededSounds.add(this.#sound);
       this.#sound.stop();
     }
     this.stop();
