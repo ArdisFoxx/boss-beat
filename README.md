@@ -69,7 +69,7 @@ made one by hand.
 
 ## License
 
-The code in this repository is MIT-licensed (see `LICENSE`). The bar
-artwork in `assets/` is original work. The bundled Optimus Princeps fonts
-carry their own font license, separate from this repo's code license -
-check the font's own terms before reusing it outside this module.
+The code in this repository is MIT-licensed (see `LICENSE`). 
+The bundled Optimus Princeps fontscarry their own font license, 
+separate from this repo's code license - check the font's own 
+terms before reusing it outside this module.
