@@ -1,33 +1,20 @@
 # Boss Beat
 
-A Foundry module that combines Boss Bar and Boss Splash Screen to help you 
-time your GM narrative for an epic boss reveal *perfectly* to the music,
-making for a truly cinematic boss encounter.
-
-<video src="https://github.com/user-attachments/assets/1a289e5a-b064-448a-9e29-540fca03041a" width="100%" controls>
-</video>
+Replaces a hand-timed "wait N seconds then reveal the boss" macro with
+something scrubbed to the beat. Pick a boss's song, scrub to the exact
+moment you want the reveal to land, and save it against that boss's token.
 
 On Run: the song plays, a countdown to your marked beat shows on screen so
 you can narrate up to the moment, and right on the beat it fires
 [Boss Splash](https://foundryvtt.com/packages/boss-splash), reveals the
 [Boss Bar](https://foundryvtt.com/packages/bossbar), unhides the token, and
-pans and zooms to the token on the canvas. 
-
-It also renames the token and actor to whatever you typed
+pings the canvas. It also renames the token and actor to whatever you typed
 as the reveal message, so the Boss Bar's name matches what the splash just
 announced.
 
 Since the song isn't routed through Foundry's Playlists sidebar, Boss Beat
 ships its own floating play/pause/stop/volume transport panel for whatever
 track it's previewing or running.
-
-## Install
-
-In Foundry: **Add-on Modules -> Install Module**, paste this manifest URL, and click Install:
-
-```
-https://github.com/ArdisFoxx/boss-beat/releases/latest/download/module.json
-```
 
 ## Requirements
 
@@ -67,9 +54,22 @@ use out of the box. This only happens once per world, and adopts an
 existing style of the same name instead of duplicating it if you've already
 made one by hand.
 
+## Credits
+
+The bar artwork in `assets/` (`Boss_Bar.png`, `Boss_Bar_Back.png`,
+`Boss_Bar_Front.png`) was created by Reddit user
+[xxxmalkin](https://www.reddit.com/user/xxxmalkin/) ([Bluesky](https://bsky.app/profile/moonkanin.bsky.social)) -
+a collage of multiple photos, heavily hand-edited and drawn over. Used and
+redistributed with their permission.
+
+The bundled Optimus Princeps font (`OptimusPrinceps.ttf`,
+`OptimusPrincepsSemiBold.ttf`) is by [Manfred Klein](https://www.dafont.com/optimusprinceps.font),
+listed on dafont.com under its "100% Free" license category.
+
 ## License
 
-The code in this repository is MIT-licensed (see `LICENSE`). 
-The bundled Optimus Princeps fontscarry their own font license, 
-separate from this repo's code license - check the font's own 
-terms before reusing it outside this module.
+The code in this repository is MIT-licensed (see `LICENSE`). The bar
+artwork is used with the artist's permission - see Credits above, not
+covered by the code's MIT license. The bundled Optimus Princeps fonts
+carry their own font license (see Credits above) - check dafont's listing
+before reusing them outside this module.
