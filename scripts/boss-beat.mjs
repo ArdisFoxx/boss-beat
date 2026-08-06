@@ -73,16 +73,20 @@ Hooks.once("init", () => {
   });
 });
 
+// Deliberately `setup`, not `ready`, and this is load-bearing. Boss Bar computes each bar's
+// fill percentage once, when the bar renders, and only recomputes it in its own updateActor
+// hook - nothing re-reads the HP settings when they change. Measured live: correcting the
+// paths mid-session left a bar already on screen frozen at NaN% until the boss next took
+// damage. Writing at `ready` would lose that race on every single load, so the GM would see a
+// dead bar until something moved. `setup` runs after every module's `init` (so bossbar's
+// settings are registered and safe to write) and before any bar has rendered.
+Hooks.once("setup", async () => {
+  if (game.user.isGM) await applyHpProfile();
+});
+
 Hooks.once("ready", async () => {
   game.bossBeat = BossBeat;
-  if (game.user.isGM) {
-    await applyDefaultsOnce();
-    // Separate from applyDefaultsOnce's one-shot bootstrap on purpose: the health settings are
-    // the running game system's, not a saved look, so they get re-asserted every load rather
-    // than written once - a world that changes system, or a bossbar update that resets a
-    // default, should still come up with a bar that reads the right numbers.
-    await applyHpProfile();
-  }
+  if (game.user.isGM) await applyDefaultsOnce();
 });
 
 Hooks.on("getSceneControlButtons", (controls) => {

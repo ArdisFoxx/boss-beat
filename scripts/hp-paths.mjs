@@ -116,9 +116,12 @@ export async function applyHpProfile({ notify = false } = {}) {
     // rewriting another module's settings behind the GM's back isn't something to do without
     // telling them once. After that, startup re-assertion stays silent.
     if (notify || firstTakeover) {
-      ui.notifications.info(
-        game.i18n.format("BOSSBEAT.HpProfileApplied", { system: game.system.id })
-      );
+      // A bar that's already on screen keeps whatever percentage it computed when it rendered -
+      // Boss Bar doesn't re-read these settings, it only recomputes in its own updateActor
+      // hook. Toggling this mid-session is real but invisible until the boss takes a hit, so
+      // say which message applies rather than letting it look like nothing happened.
+      const key = game.ready ? "BOSSBEAT.HpProfileAppliedLive" : "BOSSBEAT.HpProfileApplied";
+      ui.notifications.info(game.i18n.format(key, { system: game.system.id }));
     }
   } catch (err) {
     console.warn("Boss Beat | Couldn't set Boss Bar's HP settings", err);

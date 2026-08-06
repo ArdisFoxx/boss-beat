@@ -33,6 +33,7 @@
     "MacroName": "Boss Beat: {name}",
     "MacroCreated": "Boss Beat: created the \"{name}\" macro - drag it from the Macro Directory to your hotbar.",
     "HpProfileApplied": "Boss Beat: pointed Boss Bar's health bar at {system}'s own HP fields.",
+    "HpProfileAppliedLive": "Boss Beat: pointed Boss Bar's health bar at {system}'s own HP fields. A bar already on screen keeps its old fill until the boss next takes damage, or until you reload.",
     "HpProfileRestored": "Boss Beat: gave Boss Bar's health settings back - set them yourself under Boss Bar.",
     "Settings": {
       "FixBossBarHp": {
