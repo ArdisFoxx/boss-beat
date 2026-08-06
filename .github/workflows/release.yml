@@ -8,21 +8,29 @@ name: Create Module Files For GitHub Release
 # tag - which is exactly what happened the first time this ran (module.json said 1.6.6, the
 # tags created were 1.6.4 and 1.6.5), so no assets ever got attached and Foundry's install
 # had nothing to download. This version can't hit that failure mode: the tag IS the version.
-
-env:
-  # Doesn't change per release - Foundry's "check for updates" always re-fetches this same
-  # URL, which resolves to whichever published (non-prerelease) release most recently
-  # uploaded a module.json here.
-  latest_manifest_url: "https://github.com/${{ github.repository }}/releases/latest/download/module.json"
-
-  # This release's own archive - keyed to the exact tag being published right now.
-  release_module_url: "https://github.com/${{ github.repository }}/releases/download/${{ github.event.release.tag_name }}/module.zip"
+#
+# Foundry's "check for updates" always re-fetches
+# https://github.com/<repo>/releases/latest/download/module.json, which resolves to whichever
+# published (non-prerelease) release most recently uploaded a module.json there - so the
+# manifest URL committed in module.json never changes per release.
 
 on:
   # Only real published releases - not draft saves, not plain tag pushes (tagging alone
   # doesn't create or publish a release, and this workflow won't fire for it).
   release:
     types: [published]
+
+  # Manual re-run against an existing tag, for when a release gets published and no workflow
+  # run starts at all - which is what happened to 1.8.0: the release went out carrying only
+  # GitHub's two automatic source archives, with no run of this workflow listed against it.
+  # Without this, the only way to recover a release that never got its assets is to delete and
+  # re-publish it, or cut a throwaway version bump. Point this at the tag instead.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag to build and attach module.json/module.zip to, e.g. 1.8.0"
+        required: true
+        type: string
 
 jobs:
   build:
@@ -31,14 +39,38 @@ jobs:
       contents: write
 
     steps:
+      # One step decides which tag this run is for, so the release path and the manual path
+      # can't disagree about it. `github.event.release.*` is empty on a workflow_dispatch run,
+      # which is why nothing below reads it directly any more. Both tags arrive as env vars
+      # rather than being interpolated into the script body - a tag name is repo-owner
+      # controlled here, but expression-substitution straight into a shell line is the habit
+      # worth not having.
+      #
+      # Accepts either "1.2.3" or "v1.2.3" - Ardis's tags on this repo have all been the bare
+      # form, matching his other modules.
+      - name: Resolve Release Tag
+        id: release
+        env:
+          EVENT_TAG: ${{ github.event.release.tag_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          TAG="${EVENT_TAG:-$INPUT_TAG}"
+          if [ -z "$TAG" ]; then
+            echo "::error::No tag to build - publish a release, or dispatch this workflow with a tag."
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+          echo "download=https://github.com/${{ github.repository }}/releases/download/$TAG/module.zip" >> "$GITHUB_OUTPUT"
+          echo "Building $TAG"
+
+      # Explicit ref. A release-triggered run checks the tag out on its own, but a manual run
+      # would default to the default branch and package whatever is on main rather than what
+      # the tag being repaired actually contains.
       - name: Checkout Repository
         uses: actions/checkout@v4
-
-      # Accepts either "1.2.3" or "v1.2.3" as the tag - Ardis's tags on this repo so far
-      # have been the bare form ("1.6.4", "1.6.5"), matching his other modules.
-      - name: Extract Version From Tag
-        id: get_version
-        uses: battila7/get-version-action@v2
+        with:
+          ref: ${{ steps.release.outputs.tag }}
 
       # Rewrites the #{VERSION}# and #{DOWNLOAD}# placeholders in module.json with this
       # release's real values. Only touches the action's checked-out copy of the file, not
@@ -48,11 +80,12 @@ jobs:
         with:
           files: "module.json"
         env:
-          VERSION: ${{ steps.get_version.outputs.version-without-v }}
-          DOWNLOAD: ${{ env.release_module_url }}
+          VERSION: ${{ steps.release.outputs.version }}
+          DOWNLOAD: ${{ steps.release.outputs.download }}
 
       # Everything Foundry actually needs to load and run the module. Excludes .git/.github
-      # and any pipeline-only tooling that never belongs in a player's install.
+      # and any pipeline-only tooling that never belongs in a player's install. Recursive, so
+      # a new file under scripts/ ships without this list needing an edit.
       - name: Create Module Archive
         run: |
           zip \
@@ -71,9 +104,15 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           allowUpdates: true
-          name: ${{ github.event.release.name }}
-          prerelease: ${{ github.event.release.prerelease }}
+          tag: ${{ steps.release.outputs.tag }}
           token: ${{ secrets.GITHUB_TOKEN }}
           artifacts: "./module.json, ./module.zip"
-          tag: ${{ github.event.release.tag_name }}
+          name: ${{ github.event.release.name }}
           body: ${{ github.event.release.body }}
+          prerelease: ${{ github.event.release.prerelease }}
+          # On a manual re-run those three values are empty, and allowUpdates would cheerfully
+          # write that emptiness over the release's real name, notes and prerelease flag. Leave
+          # them exactly as they are and only attach the files.
+          omitNameDuringUpdate: ${{ github.event_name == 'workflow_dispatch' }}
+          omitBodyDuringUpdate: ${{ github.event_name == 'workflow_dispatch' }}
+          omitPrereleaseDuringUpdate: ${{ github.event_name == 'workflow_dispatch' }}
