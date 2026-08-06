@@ -59,8 +59,7 @@ made one by hand.
 The bar artwork in `assets/` (`Boss_Bar.png`, `Boss_Bar_Back.png`,
 `Boss_Bar_Front.png`) was created by Reddit user
 [xxxmalkin](https://www.reddit.com/user/xxxmalkin/) ([Bluesky](https://bsky.app/profile/moonkanin.bsky.social)) -
-a collage of multiple photos, heavily hand-edited and drawn over. Used and
-redistributed with their permission.
+Used and redistributed with their permission.
 
 The bundled Optimus Princeps font (`OptimusPrinceps.ttf`,
 `OptimusPrincepsSemiBold.ttf`) is by [Manfred Klein](https://www.dafont.com/optimusprinceps.font),
