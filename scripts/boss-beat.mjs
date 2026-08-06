@@ -1,6 +1,7 @@
 import { BossBeatConfigApp } from "./boss-beat-config.mjs";
 import { MODULE_ID } from "./constants.mjs";
 import { registerDefaultsSettings, applyDefaultsOnce } from "./defaults.mjs";
+import { registerHpPathSettings, applyHpProfile } from "./hp-paths.mjs";
 
 /** How long Boss Splash's overlay sits on screen before Boss Beat reveals the bar/token/ping.
  *  Matches the delay used in the original hand-written macro this module replaces. */
@@ -56,6 +57,7 @@ async function switchToOutroPlaylist(config) {
 Hooks.once("init", () => {
   console.log("Boss Beat | Initializing");
   registerDefaultsSettings();
+  registerHpPathSettings();
   game.settings.register(MODULE_ID, "hideBossBarButton", {
     name: "BOSSBEAT.Settings.HideBossBarButton.Name",
     hint: "BOSSBEAT.Settings.HideBossBarButton.Hint",
@@ -73,7 +75,14 @@ Hooks.once("init", () => {
 
 Hooks.once("ready", async () => {
   game.bossBeat = BossBeat;
-  if (game.user.isGM) await applyDefaultsOnce();
+  if (game.user.isGM) {
+    await applyDefaultsOnce();
+    // Separate from applyDefaultsOnce's one-shot bootstrap on purpose: the health settings are
+    // the running game system's, not a saved look, so they get re-asserted every load rather
+    // than written once - a world that changes system, or a bossbar update that resets a
+    // default, should still come up with a bar that reads the right numbers.
+    await applyHpProfile();
+  }
 });
 
 Hooks.on("getSceneControlButtons", (controls) => {

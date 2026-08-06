@@ -32,7 +32,13 @@
     "CreateMacro": "Create Macro",
     "MacroName": "Boss Beat: {name}",
     "MacroCreated": "Boss Beat: created the \"{name}\" macro - drag it from the Macro Directory to your hotbar.",
+    "HpProfileApplied": "Boss Beat: pointed Boss Bar's health bar at {system}'s own HP fields.",
+    "HpProfileRestored": "Boss Beat: gave Boss Bar's health settings back - set them yourself under Boss Bar.",
     "Settings": {
+      "FixBossBarHp": {
+        "Name": "Set Boss Bar's health bar for this game system",
+        "Hint": "Boss Bar reads HP from a dot-path that only fits D&D-style systems, so on Daggerheart the bar reads nothing. With this on, Boss Beat sets Boss Bar's Current HP Path, Max HP Path and Wounds System to the right values for Pathfinder 2e, D&D 5e or Daggerheart, and re-applies them on load - so those three Boss Bar settings are Boss Beat's while it's on. Turn it off to set them by hand; your previous values come back."
+      },
       "HideBossBarButton": {
         "Name": "Hide Boss Bar's toolbar button",
         "Hint": "Removes Boss Bar's own scene-control button, since Boss Beat's config form already covers assigning a bar style per boss."

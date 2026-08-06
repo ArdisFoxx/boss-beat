@@ -47,6 +47,17 @@ a one-click "just go" once a beat's already dialed in.
 button, so you don't get two similar buttons cluttering the Token controls
 group. Applies immediately, no reload needed.
 
+**"Set Boss Bar's health bar for this game system"** (on by default) points
+Boss Bar at the right HP fields for the system you're playing. Boss Bar
+reads health out of a dot-path that assumes a D&D-shaped actor, so on
+Daggerheart - which stores Hit Points somewhere else and counts them *up* -
+the bar reads nothing at all. With this on, Boss Beat sets Boss Bar's
+Current HP Path, Max HP Path and Wounds System for Pathfinder 2e, D&D 5e or
+Daggerheart, and re-applies them on load, so those three Boss Bar settings
+are Boss Beat's while it's switched on. Turn it off to set them by hand -
+whatever they were before Boss Beat took them over comes back. On any other
+system Boss Beat leaves them alone rather than guessing.
+
 On first install, Boss Beat also registers a bundled Boss Bar style, "Boss
 Beat Souls" (Optimus Princeps font, bar art and font both bundled in
 `assets/`), and applies a preset Boss Splash look, so everything's ready to
