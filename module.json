@@ -9,16 +9,37 @@
   },
   "relationships": {
     "requires": [
-      { "id": "boss-splash", "type": "module", "compatibility": {} },
-      { "id": "bossbar", "type": "module", "compatibility": {} }
+      {
+        "id": "boss-splash",
+        "type": "module",
+        "compatibility": {}
+      },
+      {
+        "id": "bossbar",
+        "type": "module",
+        "compatibility": {}
+      }
     ]
   },
-  "esmodules": ["scripts/boss-beat.mjs"],
-  "styles": ["styles/boss-beat.css"],
-  "languages": [
-    { "lang": "en", "name": "English", "path": "lang/en.json" }
+  "esmodules": [
+    "scripts/boss-beat.mjs"
   ],
-  "authors": [{ "name": "Ardis" }],
+  "styles": [
+    "styles/boss-beat.css"
+  ],
+  "socket": true,
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "authors": [
+    {
+      "name": "Ardis"
+    }
+  ],
   "url": "https://github.com/ArdisFoxx/boss-beat",
   "manifest": "https://github.com/ArdisFoxx/boss-beat/releases/latest/download/module.json",
   "download": "#{DOWNLOAD}#",

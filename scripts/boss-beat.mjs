@@ -19,6 +19,55 @@ const SPLASH_DISPLAY_MS = 5000;
 const supersededSounds = new WeakSet();
 
 /**
+ * game.audio.play() builds a Sound on the CALLING client and nothing else - the v14 signature
+ * is play(src, {context, ...options}) with no socket argument, and AudioHelper.broadcast is
+ * gone. Every Boss Beat entry point is GM-gated, so the boss song was only ever audible to the
+ * GM. Everything else this module plays does reach players, because it goes through
+ * PlaylistSound documents and Foundry syncs those; the song is the one path that touches no
+ * document at all. So mirror it over the module socket: each client plays its own copy while
+ * the GM keeps the authoritative Sound that all the marker timing and handoff logic is built
+ * around.
+ *
+ * Copies start independently, so there is sub-second drift between clients and no seek sync.
+ * For a boss intro that plays start to finish that is not worth a document round-trip to fix.
+ */
+const SOCKET = `module.${MODULE_ID}`;
+
+/** This client's mirrored copy, and the run that owns it. The run id is what makes a stop
+ *  message safe to act on: a superseded run broadcasts its own stop when the newer run cuts
+ *  its sound, and without an id check that message would kill the newer track on every player
+ *  while the GM carried on hearing it. */
+let mirroredSound = null;
+let mirroredRunId = null;
+
+/** Routed through game.audio.music so the listener's own Music volume slider applies. Without a
+ *  context the track ignores that slider entirely and a player has no way to turn a boss down. */
+async function playMirrored(src, volume, runId = null) {
+  try { mirroredSound?.stop(); } catch (_) { /* already gone */ }
+  mirroredSound = null;
+  mirroredRunId = runId;
+  try {
+    mirroredSound = await game.audio.play(src, {
+      context: game.audio.music,
+      volume: Number(volume) >= 0 ? Number(volume) : 0.6,
+      loop: false,
+      autoplay: true
+    });
+  } catch (err) {
+    console.error("Boss Beat | mirrored playback failed:", err);
+  }
+}
+
+function stopMirrored(runId = null) {
+  // Ignore a stop from a run this client has already moved on from. A null id means "stop
+  // whatever is playing" and is kept for a message from any older build.
+  if (runId && mirroredRunId && runId !== mirroredRunId) return;
+  try { mirroredSound?.stop(); } catch (_) { /* already gone */ }
+  mirroredSound = null;
+  mirroredRunId = null;
+}
+
+/**
  * Pauses every currently-playing PlaylistSound across every currently-playing Playlist, the
  * same way Foundry's own sidebar Pause button does - a document update capturing the real
  * `sound.currentTime` into `pausedTime` (confirmed by reading the sidebar's own
@@ -86,6 +135,12 @@ Hooks.once("setup", async () => {
 
 Hooks.once("ready", async () => {
   game.bossBeat = BossBeat;
+  // Players only. The GM already owns the real Sound and would otherwise hear the track twice.
+  game.socket?.on(SOCKET, async (data) => {
+    if (game.user.isGM) return;
+    if (data?.action === "play") await playMirrored(data.src, data.volume, data.runId ?? null);
+    else if (data?.action === "stop") stopMirrored(data.runId ?? null);
+  });
   if (game.user.isGM) await applyDefaultsOnce();
 });
 
@@ -210,12 +265,21 @@ export class BossBeat {
     // boss track over ambient music is wrong either way.
     await pauseActivePlaylistTracks();
 
+    // Identifies this run's messages so a superseded run cannot stop the run that replaced it.
+    const runId = foundry.utils.randomID();
+
     let sound;
     try {
       // Ship at whatever volume the GM left the preview player at when saving - older saved
       // configs from before this field existed fall back to the same 0.6 default new configs
       // start at.
-      sound = await game.audio.play(config.songPath, { volume: config.volume ?? 0.6, loop: false, autoplay: true });
+      sound = await game.audio.play(config.songPath, {
+        context: game.audio.music,
+        volume: config.volume ?? 0.6,
+        loop: false,
+        autoplay: true
+      });
+      game.socket?.emit(SOCKET, { action: "play", src: config.songPath, volume: config.volume ?? 0.6, runId });
     } catch (err) {
       ui.notifications.error(game.i18n.format("BOSSBEAT.PlaybackError", { path: config.songPath }));
       console.error("Boss Beat |", err);
@@ -232,7 +296,15 @@ export class BossBeat {
     // not just the ones that reach the end of run().
     let resolveFinished;
     const trackFinished = new Promise((resolve) => { resolveFinished = resolve; });
-    const onTrackFinished = () => resolveFinished();
+    const onTrackFinished = () => {
+      resolveFinished();
+      // Sent on a natural end as well as an explicit stop. A client whose copy started late,
+      // or buffered mid-track, would otherwise still be playing the boss song when the outro
+      // playlist takes over - the same collision pauseActivePlaylistTracks() exists to prevent
+      // at the other end of the run. The run id keeps it honest: a client already listening to
+      // a newer boss ignores this, and stopping a sound that has already ended is a no-op.
+      game.socket?.emit(SOCKET, { action: "stop", runId });
+    };
     sound.addEventListener("end", onTrackFinished, { once: true });
     sound.addEventListener("stop", onTrackFinished, { once: true });
     trackFinished.then(async () => {
