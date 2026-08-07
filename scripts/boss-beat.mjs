@@ -368,7 +368,11 @@ export class BossBeat {
       await actor.update({ name: config.message });
     }
 
-    await canvas.scene.setFlag("bossbar", "actors", canvas.tokens.controlled.map(t => ({
+    // Splash-only bosses skip the Boss Bar and nothing else: the splash still fires, the
+    // actor and token are still renamed, and the token is still revealed. The bar style is
+    // deliberately still read above - it is what the splash takes its FONT from, so turning
+    // the bar off must not quietly drop the boss back to the world-wide default font.
+    if (!config.splashOnly) await canvas.scene.setFlag("bossbar", "actors", canvas.tokens.controlled.map(t => ({
       uuid: t.actor.uuid,
       style: config.barStyle,
       hideName: false

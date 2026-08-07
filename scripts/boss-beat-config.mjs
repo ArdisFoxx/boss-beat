@@ -16,7 +16,8 @@ export class BossBeatConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
           subText: "",
           barStyle: game.settings.get(MODULE_ID, "defaultBarStyle") ?? "",
           volume: 0.6,
-          outroPlaylist: ""
+          outroPlaylist: "",
+          splashOnly: false
         };
   }
 
@@ -91,6 +92,9 @@ export class BossBeatConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
     this.data.subText = current.subText ?? this.data.subText;
     this.data.barStyle = current.barStyle ?? this.data.barStyle;
     this.data.outroPlaylist = current.outroPlaylist ?? this.data.outroPlaylist;
+    // ?? not ||: an unchecked box is `false`, which || would discard in favour of a
+    // previously-true saved value, silently re-enabling the bar the GM just turned off.
+    this.data.splashOnly = current.splashOnly ?? this.data.splashOnly;
     // Volume isn't a form field (it's the native <audio controls> element's own slider, not
     // an <input> FormDataExtended sees) - read it straight off the DOM before the re-render
     // below recreates the audio element and would otherwise reset it back to the default.
@@ -163,6 +167,7 @@ export class BossBeatConfigApp extends HandlebarsApplicationMixin(ApplicationV2)
     this.data.subText = data.subText ?? "";
     this.data.barStyle = data.barStyle ?? "";
     this.data.outroPlaylist = data.outroPlaylist ?? "";
+    this.data.splashOnly = data.splashOnly === true;
     // Same reasoning as #onPickSong - volume lives on the native <audio> element, not a form
     // field, so it has to be read off the DOM directly rather than out of `data`. Whatever
     // level the GM left the preview at is what plays live.

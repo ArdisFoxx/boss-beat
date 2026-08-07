@@ -1,10 +1,12 @@
 {
   "BOSSBEAT": {
     "WindowTitle": "Boss Beat: {name}",
-    "Message": "Message",
+    "Message": "Name",
     "SubText": "Subtext",
     "BarStyle": "Boss Bar Style",
     "NoStyle": "— none —",
+    "SplashOnly": "Splash only, no Boss Bar",
+    "SplashOnlyHint": "Show the splash and reveal the token, but do not put this boss on the Boss Bar. The bar style above still sets the splash font.",
     "OutroPlaylist": "Playlist After Song",
     "NoOutroPlaylist": "— none —",
     "OutroPlaylistHint": "Starts this playlist once the boss track ends or you hit Stop. Whatever playlist track was already playing gets paused (not stopped) the moment the boss track starts.",

@@ -35,6 +35,13 @@
     </select>
   </div>
   <div class="form-group">
+    <label>
+      <input type="checkbox" name="splashOnly" {{#if splashOnly}}checked{{/if}}>
+      {{localize "BOSSBEAT.SplashOnly"}}
+    </label>
+    <p class="hint">{{localize "BOSSBEAT.SplashOnlyHint"}}</p>
+  </div>
+  <div class="form-group">
     <label>{{localize "BOSSBEAT.OutroPlaylist"}}</label>
     <select name="outroPlaylist">
       <option value="">{{localize "BOSSBEAT.NoOutroPlaylist"}}</option>
