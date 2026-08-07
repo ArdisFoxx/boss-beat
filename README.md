@@ -4,6 +4,10 @@ Replaces a hand-timed "wait N seconds then reveal the boss" macro with
 something scrubbed to the beat. Pick a boss's song, scrub to the exact
 moment you want the reveal to land, and save it against that boss's token.
 
+
+https://github.com/user-attachments/assets/4043e8f5-42df-436d-b526-1b0a1a99cbb8
+
+
 On Run: the song plays, a countdown to your marked beat shows on screen so
 you can narrate up to the moment, and right on the beat it fires
 [Boss Splash](https://foundryvtt.com/packages/boss-splash), reveals the
